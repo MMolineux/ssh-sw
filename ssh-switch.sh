@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION="1.0.1"
+VERSION="1.1.0"
 
 SSH_CONFIG_PATH=~/.ssh/config
 SSH_PROFILE_PATH=~/.ssh/profiles
@@ -229,10 +229,20 @@ if [ ${#POSITIONAL[@]} == 0 ]; then
         fi
     fi
 else
-    if [ -f "$SSH_PROFILE_PATH/$1" ]; then
-        switch_profile $1
+    profile=$1
+    if [[ "$1" =~ ^[0-9]+$ ]]; then
+        profiles=(`ls -1 $SSH_PROFILE_PATH`)
+        profile="${profiles[$1-1]}"
+        if [[ -z "$profile" ]]; then
+            echo "Error: $1 is not a valid profile number."
+            exit 1
+        fi
+    fi
+    
+    if [ -f "$SSH_PROFILE_PATH/$profile" ]; then
+        switch_profile $profile
     else
-        echo "Error: Profile \"$1\" doesn't exist. Use --create to add a new profile." >&2
+        echo "Error: Profile \"$profile\" doesn't exist. Use --create to add a new profile." >&2
         exit 1
     fi
 fi
