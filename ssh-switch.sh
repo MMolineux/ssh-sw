@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION="1.1.0"
+VERSION="1.3.0"
 
 SSH_CONFIG_PATH=~/.ssh/config
 SSH_PROFILE_PATH=~/.ssh/profiles
@@ -253,6 +253,9 @@ if [ ${#POSITIONAL[@]} == 0 ]; then
         else
             ls -1 $SSH_PROFILE_PATH | nl
         fi
+echo "
+Hosts in current profile:"
+        cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*" | nl #exclude full wildcard
     fi
 else
     profile=$1
