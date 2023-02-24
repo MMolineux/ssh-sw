@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 SSH_CONFIG_PATH=~/.ssh/config
 SSH_PROFILE_PATH=~/.ssh/profiles
@@ -24,6 +24,8 @@ Behaviour:
 "
 }
 
+#Track whether user switcheprofile
+show_profiles=true
 
 # Usage: options=("one" "two" "three"); inputChoice "Choose:" 1 "${options[@]}"; choice=$?; echo "${options[$choice]}"
 function inputChoice() {
@@ -113,14 +115,14 @@ function backup_config() {
     cp $SSH_CONFIG_PATH /tmp/ssh_config.bak
 }
 
-#Usage: activate_config_profile new_profile
-function activate_config_profile() {
+#Usage: switch_profile new_profile
+function switch_profile() {
     new_profile=$1
     backup_config
     new_profile_path=$SSH_PROFILE_PATH/$new_profile
 
     set_profile_name $new_profile_path    
-    cp $new_profile_path $SSH_CONFIG_PATH
+    cp $new_profile_path $SSH_CONFIG_PATH   
 }
 
 
@@ -137,15 +139,16 @@ if [[ -n "${current}" ]]; then
         if [[ "${profiles[$i]}" == "${current}" ]]; then
             break
         fi
-        idx_current=+1
+        idx_current=$[idx_current +1]
     done
+
 input_prompt="$current is active, select a profile:"
 
 fi
 
 inputChoice "$input_prompt" $idx_current "${profiles[@]}"; choice=$?
 
-activate_config_profile "${profiles[$choice]}"
+switch_profile "${profiles[$choice]}"
 }
 
 function create_new_profile() {
@@ -169,15 +172,18 @@ while (( $# > 0 )); do
         -h|--help)
         show_usage
         shift
+        show_profiles=false
         ;;
         -v|--version)
         echo "Version: $VERSION"
         shift
+        show_profiles=false
         ;;
         #Interactive profile switching
         -i|--interactive)
         interactive_selection
-        shift 
+        shift
+        show_profiles=false
         ;;
         #Create a new profile
         -c|--create)
@@ -191,11 +197,13 @@ See $(basename $0) --help for usage info"
             create_new_profile "${1}"
             shift $((numOfArgs + 1)) # shift 'numOfArgs + 1' to bypass switch and its value
         fi
+        show_profiles=false
         ;;
         #unknown flag/switch
         -*) 
 echo "Unknown option ${1}.
 See $(basename $0) --help for usage info"
+        show_profiles=false
         exit 0
         ;;
          # positional
@@ -208,18 +216,21 @@ done
 
 set -- "${POSITIONAL[@]}" # restore positional params
 
-if [ ${#POSITIONAL[@]} == 0 ]; then
-    current_name=`get_profile_name $SSH_CONFIG_PATH`
 
-    echo "Available profiles:"
-    if [[ -n "${current_name}" ]]; then    
-        ls -1 $SSH_PROFILE_PATH | nl | sed "s/$current_name/$current_name - active/g"
-    else
-        ls -1 $SSH_PROFILE_PATH | nl
+if [ ${#POSITIONAL[@]} == 0 ]; then
+    if $show_profiles; then
+        current_name=`get_profile_name $SSH_CONFIG_PATH`
+
+        echo "Available profiles:"
+        if [[ -n "${current_name}" ]]; then    
+            ls -1 $SSH_PROFILE_PATH | nl | sed "s/$current_name/$current_name - active/g"
+        else
+            ls -1 $SSH_PROFILE_PATH | nl
+        fi
     fi
 else
-    if [ -f "$SSL_PROFILE_PATH/$1" ]; then
-        activate_config_profile $1
+    if [ -f "$SSH_PROFILE_PATH/$1" ]; then
+        switch_profile $1
     else
         echo "Error: Profile \"$1\" doesn't exist. Use --create to add a new profile." >&2
         exit 1
