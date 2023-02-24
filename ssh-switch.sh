@@ -9,13 +9,15 @@ echo \ "
 Description:
     Script to handle switching between user config files for ssh. 
 
-Usage: $(basename $0) [-hvi] [-c profile_name] [profile_name]
+Usage: $(basename $0) [-hvire] [-c profile_name] [profile_name]
 
 Options:
     -h|--help   Display this help message.
     -v|--version    Display version infomation.
     -i|--interactive    Displays list of ssh config profiles and prompts for numbered profile to switch to.
     -c|--create Interactively create a new profile with name supplied in \"profile_name\" opperand.
+    -r|--reload After editing a profile under $SSH_PROFILE_PATH. Reload profile into ssh config.
+    -e|--edit   Edit currently active profile.
 
 Behaviour:
     Without arguments or options, $(basename $0) will list available ssh config profiles, highlighting the current profile with an asterisk (*).
@@ -125,7 +127,21 @@ function switch_profile() {
     cp $new_profile_path $SSH_CONFIG_PATH   
 }
 
+function reload_profile() {
+    current=$(get_profile_name $SSH_CONFIG_PATH)
+    switch_profile $current
+}
 
+function edit_current_profile() {
+    current=$(get_profile_name $SSH_CONFIG_PATH)
+    
+    if [[ -n "$EDITOR" ]]; then
+        $EDITOR $SSH_PROFILE_PATH/$current
+    else
+        xdg-open $SSH_PROFILE_PATH/$current
+    fi
+    
+}
 
 function interactive_selection () {
 profiles=(`ls -1 $SSH_PROFILE_PATH`)
@@ -198,6 +214,16 @@ See $(basename $0) --help for usage info"
             shift $((numOfArgs + 1)) # shift 'numOfArgs + 1' to bypass switch and its value
         fi
         show_profiles=false
+        ;;
+        -r|--reload)
+        reload_profile
+        show_profiles=false
+        shift
+        ;;
+        -e|--edit)
+        edit_current_profile
+        show_profiles=false
+        shift
         ;;
         #unknown flag/switch
         -*) 
