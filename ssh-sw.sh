@@ -13,6 +13,7 @@ Description:
 Options:
     -h|--help       Display this help message.
     -v|--version    Display version infomation.
+    -b|--back {n}   Reconnect to last ssh host or select specific host from history (zero-indexed).
     -r|--reload     After editing a profile under $SSH_PROFILE_PATH. Reload profile into ssh config.
     -l|--list       List available profiles and show current profile's hosts.
     -e|--edit       Edit currently active profile.
@@ -217,8 +218,40 @@ switch_profile "${profiles[$choice]}"
 function interactive_host_select (){ 
     hosts=($(cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*" | sed -z 's/\n/\t/g'))
     inputChoice "Select an ssh host to connect to:" 0 "${hosts[@]}"; choice=$?
-
+    
+    # store host in env
+    if [[ -f /tmp/sshsw_history ]]; then 
+        history_str=$(cat /tmp/sshsw_history)
+        echo "${hosts[$choice]},${history_str}" > /tmp/sshsw_history
+    else
+        echo "${hosts[$choice]}" > /tmp/sshsw_history
+    fi
     ssh "${hosts[$choice]}"
+}
+
+function connect_prev_profile() {
+    n="$1" 
+    # zero indexed
+    n=$(( $1 + 1 ))
+
+    if [[ -f /tmp/sshsw_history ]]; then
+        history_str=$(cat /tmp/sshsw_history)
+        
+        # count items in history
+        history_count=$(echo "$history_str" | tr -cd "," | wc -c)
+        history_count=$(($history_count + 1))
+        if [[ $history_count -lt $n ]]; then
+            echo "Request $n host(s) ago. History only has $history_count hosts"
+            exit 1
+        fi
+        
+        host=$(cat /tmp/sshsw_history | awk -F',' '{print $'$n'}')
+        echo "Connecting to $host"
+        ssh "${host}"
+    else
+        echo "No previous hosts"
+        exit 0
+    fi
 }
 
 function create_new_profile() {
@@ -277,6 +310,24 @@ while (( $# > 0 )); do
                 exit 1
             else
                 delete_profile "${2}"
+            fi
+            exit 0
+        ;;
+        -b|--back)
+            numOfArgs=1
+            if (( $# < 2 )); then
+                connect_prev_profile 0
+            else
+                if [ "${2}" == 'l' ]; then
+                    if [ -f /tmp/sshsw_history ]; then
+                        cat /tmp/sshsw_history | sed -z "s/,/\n/g"
+                    else
+                        echo "No history to list"
+                        exit 0
+                    fi
+                else
+                    connect_prev_profile "${2}"
+                fi
             fi
             exit 0
         ;;
