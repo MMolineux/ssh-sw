@@ -220,11 +220,11 @@ function interactive_host_select (){
     inputChoice "Select an ssh host to connect to:" 0 "${hosts[@]}"; choice=$?
     
     # store host in env
-    if [[ -f /tmp/sshsw_history ]]; then 
-        history_str=$(cat /tmp/sshsw_history)
-        echo "${hosts[$choice]},${history_str}" > /tmp/sshsw_history
+    if [[ -f "${SSHSW_HISTORY_FILE}" ]]; then 
+        history_str=$(cat "${SSHSW_HISTORY_FILE}")
+        echo "${hosts[$choice]},${history_str}" > "${SSHSW_HISTORY_FILE}"
     else
-        echo "${hosts[$choice]}" > /tmp/sshsw_history
+        echo "${hosts[$choice]}" > "${SSHSW_HISTORY_FILE}"
     fi
     ssh "${hosts[$choice]}"
 }
@@ -233,9 +233,8 @@ function connect_prev_profile() {
     n="$1" 
     # zero indexed
     n=$(( $1 + 1 ))
-
-    if [[ -f /tmp/sshsw_history ]]; then
-        history_str=$(cat /tmp/sshsw_history)
+    if [[ -f "${SSHSW_HISTORY_FILE}" ]]; then
+        history_str=$(cat "${SSHSW_HISTORY_FILE}")
         
         # count items in history
         history_count=$(echo "$history_str" | tr -cd "," | wc -c)
@@ -245,7 +244,7 @@ function connect_prev_profile() {
             exit 1
         fi
         
-        host=$(cat /tmp/sshsw_history | awk -F',' '{print $'$n'}')
+        host=$(cat "${SSHSW_HISTORY_FILE}" | awk -F',' '{print $'$n'}')
         echo "Connecting to $host"
         ssh "${host}"
     else
@@ -272,6 +271,7 @@ if ! [ -f "$SSH_CONFIG_PATH" ]; then
     touch $SSH_CONFIG_PATH
 fi
 
+export SSHSW_HISTORY_FILE="/tmp/sshsw_history_$(get_profile_name $SSH_CONFIG_PATH)"
 
 
 POSITIONAL=()
@@ -318,9 +318,14 @@ while (( $# > 0 )); do
             if (( $# < 2 )); then
                 connect_prev_profile 0
             else
-                if [ "${2}" == 'l' ]; then
-                    if [ -f /tmp/sshsw_history ]; then
-                        cat /tmp/sshsw_history | sed -z "s/,/\n/g"
+                if [[ "${2}" =~ [lc] ]]; then
+                    if [ -f "${SSHSW_HISTORY_FILE}" ]; then
+
+                        cat "${SSHSW_HISTORY_FILE}" | sed -z "s/,/\n/g"
+                        if [ "${2}" == 'c' ]; then 
+                            echo "Clearing history"
+                            rm "${SSHSW_HISTORY_FILE}"
+                        fi
                     else
                         echo "No history to list"
                         exit 0
