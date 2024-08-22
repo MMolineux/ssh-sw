@@ -19,7 +19,7 @@ Options:
     -h|--help       Display this help message.
     -v|--version    Display version infomation.
     -b|--back {n}   Reconnect to last ssh host or select specific host from history (zero-indexed).
-    -r|--reload     After editing a profile under $SSH_PROFILE_PATH. Reload profile into ssh config.
+    -r|--reload     After editing a profile manually. Reload profile into ssh config.
     -l|--list       List available profiles and show current profile's hosts.
     -e|--edit       Edit currently active profile.
     -c|--create     Create a new empty profile with the provided profile_namep
