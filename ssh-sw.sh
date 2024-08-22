@@ -81,7 +81,7 @@ function inputChoice() {
 
 function show_hosts() {
     echo "Hosts in current profile:"
-    cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*" | nl #exclude full wildcard
+    cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*[^*]$" | nl #exclude full wildcard
 }
 
 function show_profiles() {
@@ -216,7 +216,7 @@ switch_profile "${profiles[$choice]}"
 }
 
 function interactive_host_select (){ 
-    hosts=($(cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*" | sed -z 's/\n/\t/g'))
+    hosts=($(cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*[^*]$" | sed -z 's/\n/\t/g'))
     inputChoice "Select an ssh host to connect to:" 0 "${hosts[@]}"; choice=$?
     
     # store host in env
