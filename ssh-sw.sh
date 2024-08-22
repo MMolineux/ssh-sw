@@ -4,7 +4,7 @@ SSH_CONFIG_PATH=~/.ssh/config
 SSH_PROFILE_PATH=~/.ssh/profiles
 
 if ! [ -d "${SSH_PROFILE_PATH}" ]; then
-    echo "profiles directory didn't exist. creating ${SSH_PROFILE_PATH}"
+    echo "${SSH_PROFILE_PATH} directory didn't exist. creating ${SSH_PROFILE_PATH}"
     mkdir -p "${SSH_PROFILE_PATH}"
 fi
 
@@ -187,8 +187,8 @@ function delete_profile() {
                             echo "Switching back to first profile: $switch_back_profile"
                             switch_profile "$switch_back_profile"
                         else
-                            # clear contents of active profile and rename
-                            sed -i '2s/.*/#main/;3,$d' "$SSH_CONFIG_PATH"
+                            # create blank profile
+                            echo -e "###PROFILE_NAME###\n#blank" | tee "$SSH_CONFIG_PATH" > "$SSH_PROFILE_PATH/blank" 
                         fi
                     else
                         echo "Failed to delete $profile_path" >&2
@@ -286,19 +286,23 @@ function create_new_profile() {
 
 
 if ! [ -f "$SSH_CONFIG_PATH" ]; then
-    echo "Warning: $SSH_CONFIG_PATH didn't exist. Creating example config file now."
+    echo "$SSH_CONFIG_PATH didn't exist. Creating example config file now."
     # create empty profile with name "example"
 echo "###PROFILE_NAME###
-#example
+#example 
+# First two lines are auto-generated, changes will be overwritten. 
+
+# The rest of the file is just a plain, vanilla ssh_config file. 
+# see the man page for more info: https://www.man7.org/linux/man-pages/man5/ssh_config.5.html
 
 Host example-deleteme
     Hostname example.com
     User admin
     IdentityFile ~/.ssh/id_rsa" | tee "$SSH_CONFIG_PATH" > "$SSH_PROFILE_PATH/example"
-
 echo ""
-echo "Now use the -e flag to edit the example config file, or -c flag to create a new one"
-exit 0
+echo "Opening example config in editor.."
+edit_current_profile
+show_interactive=false
 fi
 
 POSITIONAL=()
