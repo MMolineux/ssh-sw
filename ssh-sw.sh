@@ -3,6 +3,11 @@ VERSION="2.0.0"
 SSH_CONFIG_PATH=~/.ssh/config
 SSH_PROFILE_PATH=~/.ssh/profiles
 
+if ! [ -d "${SSH_PROFILE_PATH}" ]; then
+    echo "profiles directory didn't exist. creating ${SSH_PROFILE_PATH}"
+    mkdir -p "${SSH_PROFILE_PATH}"
+fi
+
 function show_usage () {
 echo -e "
 Usage: $(basename $0) [-hvrle] [-c profile_name] [-d profile_name] [host]
@@ -155,6 +160,7 @@ function edit_current_profile() {
     else
         if ! xdg-open "$SSH_PROFILE_PATH/$current" 2> /dev/null; then
             echo "Failed to open a text editor to edit your profile."
+            echo "Please export $EDITOR to your env. e.g. export EDTIOR=/usr/bin/nano"
         fi
     fi
     
@@ -267,8 +273,19 @@ function create_new_profile() {
 
 
 if ! [ -f "$SSH_CONFIG_PATH" ]; then
-    echo "Warning: $SSH_CONFIG_PATH didn't exist. Creating blank config file now."
-    touch $SSH_CONFIG_PATH
+    echo "Warning: $SSH_CONFIG_PATH didn't exist. Creating example config file now."
+    # create empty profile with name "example"
+echo "###PROFILE_NAME###
+#example
+
+Host example-deleteme
+    Hostname example.com
+    User admin
+    IdentityFile ~/.ssh/id_rsa" | tee "$SSH_CONFIG_PATH" > "$SSH_PROFILE_PATH/example"
+
+echo ""
+echo "Now use the -e flag to edit the example config file, or -c flag to create a new one"
+exit 0
 fi
 
 export SSHSW_HISTORY_FILE="/tmp/sshsw_history_$(get_profile_name $SSH_CONFIG_PATH)"
