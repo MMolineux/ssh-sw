@@ -160,7 +160,8 @@ function edit_current_profile() {
     else
         if ! xdg-open "$SSH_PROFILE_PATH/$current" 2> /dev/null; then
             echo "Failed to open a text editor to edit your profile."
-            echo "Please export $EDITOR to your env. e.g. export EDTIOR=/usr/bin/nano"
+            echo "Please export \$EDITOR to your env."
+            echo "e.g. add \"export EDTIOR=/usr/bin/nano\" to the bottom of your ~/.bashrc"
         fi
     fi
     
@@ -179,6 +180,16 @@ function delete_profile() {
                     rm "$profile_path"
                     if (( $? == 0 )); then
                         echo "Done"
+                        # switch back to index 0
+                        profiles=($(ls -1 $SSH_PROFILE_PATH))
+                        switch_back_profile="${profiles[0]}"
+                        if [ -n "$switch_back_profile" ]; then
+                            echo "Switching back to first profile: $switch_back_profile"
+                            switch_profile "$switch_back_profile"
+                        else
+                            # clear contents of active profile and rename
+                            sed -i '2s/.*/#main/;3,$d' "$SSH_CONFIG_PATH"
+                        fi
                     else
                         echo "Failed to delete $profile_path" >&2
                         exit 1
