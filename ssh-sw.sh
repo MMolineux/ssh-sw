@@ -236,7 +236,8 @@ function interactive_host_select (){
     hosts=($(cat $SSH_CONFIG_PATH | grep -Po "(?<=Host )[^*].*[^*]$" | sed -z 's/\n/\t/g'))
     inputChoice "Select an ssh host to connect to:" 0 "${hosts[@]}"; choice=$?
     
-    # store host in env
+    SSHSW_HISTORY_FILE="/tmp/sshsw_history_$(get_profile_name $SSH_CONFIG_PATH)"
+    # store host in tmp file before connecting to host.
     if [[ -f "${SSHSW_HISTORY_FILE}" ]]; then 
         history_str=$(cat "${SSHSW_HISTORY_FILE}")
         echo "${hosts[$choice]},${history_str}" > "${SSHSW_HISTORY_FILE}"
@@ -250,6 +251,7 @@ function connect_prev_profile() {
     n="$1" 
     # zero indexed
     n=$(( $1 + 1 ))
+    SSHSW_HISTORY_FILE="/tmp/sshsw_history_$(get_profile_name $SSH_CONFIG_PATH)"
     if [[ -f "${SSHSW_HISTORY_FILE}" ]]; then
         history_str=$(cat "${SSHSW_HISTORY_FILE}")
         
@@ -299,9 +301,6 @@ echo "Now use the -e flag to edit the example config file, or -c flag to create 
 exit 0
 fi
 
-export SSHSW_HISTORY_FILE="/tmp/sshsw_history_$(get_profile_name $SSH_CONFIG_PATH)"
-
-
 POSITIONAL=()
 while (( $# > 0 )); do
     case "${1}" in
@@ -347,6 +346,7 @@ while (( $# > 0 )); do
                 connect_prev_profile 0
             else
                 if [[ "${2}" =~ [lc] ]]; then
+                    SSHSW_HISTORY_FILE="/tmp/sshsw_history_$(get_profile_name $SSH_CONFIG_PATH)"
                     if [ -f "${SSHSW_HISTORY_FILE}" ]; then
 
                         cat "${SSHSW_HISTORY_FILE}" | sed -z "s/,/\n/g"
