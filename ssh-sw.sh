@@ -51,11 +51,25 @@ function inputChoice() {
     IFS=';' read -rsdR -p $'\E[6n' ROW COL
     echo "${ROW#*[}"
   }
+
   key_input() {
-    read -rs -n3 key 2>/dev/null >&2
-    [[ $key = ${ESC}[A ]] && echo up
-    [[ $key = ${ESC}[B ]] && echo down
-    [[ $key = "" ]] && echo enter
+    local key rest
+
+    IFS= read -rs -n1 key 2>/dev/null >&2
+
+    case "$key" in
+    $'\e')
+      # possible escape sequence
+      read -rs -n2 rest 2>/dev/null >&2 || true
+      case "$rest" in
+      '[A') echo up ;;
+      '[B') echo down ;;
+      esac
+      ;;
+    k) echo up ;;
+    j) echo down ;;
+    "") echo enter ;;
+    esac
   }
 
   for opt; do echo; done
@@ -82,11 +96,11 @@ function inputChoice() {
 
     case $(key_input) in
     enter) break ;;
-    up)
+    up | k)
       ((selected--))
       [ "${selected}" -lt 0 ] && selected=$(($# - 1))
       ;;
-    down)
+    down | j)
       ((selected++))
       [ "${selected}" -ge $# ] && selected=0
       ;;
